@@ -356,10 +356,17 @@ create policy "public reads visible pillars"
   on public.vision_pillars for select to anon, authenticated
   using (is_visible = true);
 
+-- An update is public when it is published with a past timestamp, OR when it
+-- was scheduled for a moment that has already arrived. The second clause is what
+-- makes publication independent of the cron job: even if the job never runs, the
+-- post becomes visible exactly on time.
 drop policy if exists "public reads published updates" on public.update_posts;
 create policy "public reads published updates"
   on public.update_posts for select to anon, authenticated
-  using (status = 'published' and published_at is not null and published_at <= now());
+  using (
+    (status = 'published' and published_at is not null and published_at <= now())
+    or (status = 'scheduled' and scheduled_for is not null and scheduled_for <= now())
+  );
 
 drop policy if exists "public reads published events" on public.events;
 create policy "public reads published events"
@@ -376,13 +383,46 @@ create policy "public reads settings"
   on public.site_settings for select to anon, authenticated
   using (true);
 
--- Feedback is write-only for visitors, and writes actually go through the
--- server route which validates + rate-limits. No public read policy exists,
--- so submissions can never be listed by a browser client.
+-- Feedback has NO anon policy at all, by design. Submissions go through
+-- /api/feedback, which validates, rate-limits and writes with the service role.
+-- Dropping the anonymous insert path means a leaked anon key cannot be used to
+-- spam or read the inbox.
 drop policy if exists "visitors may submit feedback" on public.feedback_submissions;
-create policy "visitors may submit feedback"
-  on public.feedback_submissions for insert to anon, authenticated
-  with check (state = 'new');
+
+-- ---- Public read view ------------------------------------------------------
+-- `public_updates` applies the publication-time rule once, so every public
+-- surface reads one consistent definition. `security_invoker = true` makes the
+-- view run with the caller's permissions, which means the RLS policies on
+-- update_posts below still govern what comes back.
+create or replace view public.public_updates
+with (security_invoker = true) as
+select
+  u.id,
+  u.slug,
+  u.title,
+  u.summary,
+  u.body,
+  u.category,
+  u.status,
+  u.published_at,
+  u.scheduled_for,
+  u.cover_image_url,
+  u.cover_image_alt,
+  u.gallery,
+  u.related_manifesto_id,
+  u.external_url,
+  u.external_label,
+  u.is_pinned,
+  u.author_id,
+  u.created_at,
+  u.updated_at,
+  coalesce(u.published_at, u.scheduled_for) as visible_at
+from public.update_posts u
+where
+  (u.status = 'published' and u.published_at is not null and u.published_at <= now())
+  or (u.status = 'scheduled' and u.scheduled_for is not null and u.scheduled_for <= now());
+
+grant select on public.public_updates to anon, authenticated;
 
 -- ---- Administrator write surfaces -----------------------------------------
 do $$
