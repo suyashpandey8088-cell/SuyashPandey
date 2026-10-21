@@ -39,6 +39,7 @@ export default function AdminNav({ newFeedback = 0 }: { newFeedback?: number }) 
       items: [
         { label: "Candidate profile", href: "/admin/profile" },
         { label: "Website settings", href: "/admin/settings" },
+        { label: "Account", href: "/admin/account" },
       ],
     },
   ];

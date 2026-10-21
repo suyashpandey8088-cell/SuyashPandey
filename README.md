@@ -3,7 +3,9 @@
 A production-ready campaign platform: an editorial public website plus a private,
 database-backed dashboard that the candidate controls without touching code.
 
-**Live stack:** Next.js 15 (App Router, TypeScript) · Tailwind CSS v4 · GSAP +
+**Live:** <https://suyash-pandey-campaign.vercel.app> · admin at `/admin`
+
+**Stack:** Next.js 15 (App Router, TypeScript) · Tailwind CSS v4 · GSAP +
 ScrollTrigger · Supabase (Postgres, Auth, Storage, RLS) · Vercel.
 
 > This is a **campaign** website. It is not an official NIAT website, and every
@@ -36,6 +38,25 @@ images), **Manifesto**, **Vision pillars**, **Events**, **Progress board**,
 append-only activity log.
 
 ---
+
+## 1a. Current deployment
+
+| | |
+| --- | --- |
+| Public site | <https://suyash-pandey-campaign.vercel.app> |
+| Admin | <https://suyash-pandey-campaign.vercel.app/admin/login> |
+| Vercel project | `suyash-pandey-campaign` (`prj_rQ41tP0sEq5pSUCBoNO2XK23rA6L`) |
+| Supabase project | `niat-campaign` · `pdoozdcraehqiqqxffdi` · `ap-south-1` |
+| Scheduled job | `/api/cron/publish-scheduled`, daily 00:05 UTC |
+
+> **Note on URLs.** The team has Vercel Authentication enabled for all
+> deployment URLs except custom domains, so the per-deployment hostnames
+> (`…-<hash>-…vercel.app`) show a Vercel login page. The project's stable
+> domain `suyash-pandey-campaign.vercel.app` serves the site normally.
+> If you attach a custom domain it is exempt from that protection
+> automatically. To make every URL public instead, go to
+> **Project → Settings → Deployment Protection → Vercel Authentication →
+> Disable**.
 
 ## 2. Getting started locally
 
@@ -117,9 +138,8 @@ to it.
    ```
 
 3. Sign in at `/admin/login`.
-4. Change the password from **Website settings → Security** (or
-   `saveSettingsAction`'s sibling `changePasswordAction`), and enable Supabase
-   email confirmation so password resets work.
+4. Change the password immediately from **Admin → Account** (`changePasswordAction`),
+   and keep email confirmation enabled so password resets work.
 
 To **revoke** access, delete the row — the user keeps their account but loses all
 ability to read or write campaign content.
